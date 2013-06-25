@@ -1,0 +1,46 @@
+{ "classical": 
+  [
+      "composers", 
+      "celtic", 
+      "classical", 
+      "opera", 
+      "chamber music", 
+      "showtunes", 
+      "symphony", 
+      "sonata" 
+  ],
+  "dance":
+  [
+      "acid",
+      "beat",
+      "club",
+      "club-house",
+      "drum & bass",
+      "electronic",
+      "euro-house",
+      "euro-techno",
+      "eurodance",
+      "fast fusion",
+      "jungle",
+      "rave",
+      "techno",
+      "techno-industrial",
+      "trance"
+  ],
+  "rap": 
+  [
+      "bass",
+      "beat",
+      "booty bass",
+      "christian gangsta rap",
+      "dirty south",
+      "east coast rap",
+      "freestyle",
+      "gangsta rap",
+      "hip-hop",
+      "rap",
+      "underground hip-hop",
+      "underground rap",
+      "west coast rap"
+  ]
+}
