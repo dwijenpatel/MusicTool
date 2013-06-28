@@ -1,4 +1,4 @@
-{ "classical": 
+{ "music-classical": 
   [
       "composers", 
       "celtic", 
@@ -9,7 +9,7 @@
       "symphony", 
       "sonata" 
   ],
-  "dance":
+  "music-dance":
   [
       "acid",
       "beat",
@@ -27,7 +27,7 @@
       "techno-industrial",
       "trance"
   ],
-  "rap": 
+  "music-rap": 
   [
       "bass",
       "beat",

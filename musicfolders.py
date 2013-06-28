@@ -12,34 +12,37 @@ import re
 import pickle
 from pprint import pprint
 import json
+import time
 
 #print usage instructions. 
 def usageErrorMsg():
-    print("Usage: python musicfolders.py [musicsourcedir] [genre-info.json]")
+    print("Usage: python [%s] [musicsourcedir] [genre-info.json] " % sys.argv[0])
     print("       Scans [musicsourcedir] for artist folders")
     print("       If artist folder's song's most common id3 genre tag matches genre-info.json,")
     print("       adds artist folder to genreFolder.json output.")
-
+    
 
 #verify musicdir and genre json file exist
-def verifyInputs(genreConfig):
+def verifyInputs():
     if (len(sys.argv) < 2):
-        return (False,"please specify root music directory")
+        return (False,"please specify root music directory",{})
         
     if (not(os.path.isdir(sys.argv[1]))):
-        return (False,"music directory: [%s] is not valid" % sys.argv[1])
+        return (False,"music directory: [%s] is not valid" % sys.argv[1],{})
         
     if (not(os.path.isfile(sys.argv[2]))):
-        return (False,"json file: [%s] is not valid" % sys.argv[2])
+        return (False,"json file: [%s] is not valid" % sys.argv[2],{})
 
     #load json file
     try:
         with open(sys.argv[2], 'r') as jsonFile:
             genreConfig = json.load(jsonFile)
-    except Exception, err:
-        return (False,"error loading json file: %s" % err)
+            return (True,"",genreConfig)        
 
-    return (True,"")        
+    except Exception, err:
+        return (False,"error loading json file: %s" % err,{})
+
+
 
 #find most common genre tag from mp3s in artistDirPath
 def getArtistGenre(artistDirPath):
@@ -66,7 +69,7 @@ def getArtistGenre(artistDirPath):
 
     if (genreToCount):
         genrelist = sorted(genreToCount, key=genreToCount.get, reverse=True)
-        return (genrelist[0])
+        return (genrelist[0].encode('utf-8'))
     else:
         return (None)
 
@@ -75,7 +78,7 @@ def getArtistGenre(artistDirPath):
 #iterate over artist folders in musicdir
 #if artist's dominant genre matches genreLookup, add to genreFolders
 #also cache dominant genre info
-def loadGenreInfo(musicdir, genreLookup, genreCache):
+def loadGenreInfo(musicdir, genreConfig, genreCache):
     returnMe = {}
     try:
         musicdirs = os.listdir(musicdir)
@@ -83,21 +86,44 @@ def loadGenreInfo(musicdir, genreLookup, genreCache):
         print ("exception while listing music dir: %s\n", err)
         return;
 
+    genreLookup = {} #maps genre tag names to a genre folder
+
+    #init genre data structs
+    for genreName in genreConfig:
+        returnMe[genreName] = []
+        for ii in genreConfig[genreName]:
+        
+            genreLookup[ii] = genreName
+    pprint(genreLookup)
     for ii in musicdirs:
         #print (ii)
         dirpath = os.path.join(musicdir,ii)
         if (os.path.isdir(dirpath)):
-            if (genreCache.get(dirpath) != None): #cache-hit!
-                thisGenre = genreCache[dirpath]
-            else:
-                thisGenre = getArtistGenre(dirpath)
-                genreCache[dirpath] = thisGenre #add to cache
+            dirTime = os.path.getmtime(dirpath)
+            thisGenre = None
 
-            if (genreLookup.get(thisGenre) != None): #genre match!
-                returnMe[genreLookup[thisGenre]].append(dirpath) #add to results
+            #check genre cache
+            if (genreCache.get(dirpath) != None): #cache-hit!
+                (cacheGenre, cacheTime) = genreCache[dirpath]
+                if (dirTime < cacheTime): # not stale data!
+                    thisGenre = cacheGenre
+                    pprint(thisGenre)
+
+            #look for genre id3 tag info
+            if (thisGenre == None):
+                thisGenre = getArtistGenre(dirpath)
+                
+
+            #if we have a genre tag for this artist
+            if (thisGenre != None):
+                genreCache[dirpath] = (thisGenre, time.time()) 
+                
+                if (genreLookup.get(thisGenre) != None): #genre match!
+                    returnMe[genreLookup[thisGenre]].append(dirpath) #add to results
         else:
             print ("nonDIR:" + ii)
     print("done iterating over songs")
+    pprint(returnMe)
     return (returnMe)
 
 def loadGenreCache(cacheFileName):
@@ -106,21 +132,12 @@ def loadGenreCache(cacheFileName):
 
 #main - entry point
 def main():
-    genreConfig = {}
-
     #input validation
-    isValid,errMsg = verifyInputs(genreConfig)
+    isValid,errMsg,genreConfig = verifyInputs()
     if (not(isValid)):
         print ("Error: " + errMsg)
         usageErrorMsg()
         return 1
-
-    genreLookup = {} #maps genre tag names to a genre folder
-
-    #init genre data structs
-    for genreName in genreConfig:
-        for ii in genreConfig[genreName]:
-            genreLookup[ii] = genreName
 
     #load genre info cache
     cacheFileName = os.path.join(sys.argv[1],"musicGenreCache.json")
@@ -128,13 +145,15 @@ def main():
         genreCache = loadGenreCache(cacheFileName)
     else:
         print("no genre cache file found")
+        genreCache = {}
 
     #turn off eyeD3 warnings
     log = logging.getLogger("eyed3.id3")
     log.setLevel(logging.ERROR)
 
     #iterate over music directories and load info
-    genreFolders = loadGenreInfo(sys.argv[1], genreLookup, genreCache)
+    pprint(genreConfig)
+    genreFolders = loadGenreInfo(sys.argv[1], genreConfig, genreCache)
     
     #print results
     pprint (genreFolders, indent=2)
@@ -150,5 +169,36 @@ def main():
     return 0
 
 
+def printGenreInfo(genreCache):
+    genreBreakDown = {}
+    for thisFolder in genreCache:
+        (pathDir, artistFolder) = os.path.split(thisFolder)
+        artistGenre = genreCache[thisFolder][0]
+        if (genreBreakDown.get(artistGenre) != None):
+            genreBreakDown[artistGenre] += 1
+        else:
+            genreBreakDown[artistGenre] = 1
+        
+    sortedGenres = sorted(genreBreakDown, key=genreBreakDown.get, reverse=True)
+    for ii in sortedGenres:
+        print(ii + " - " + repr(genreBreakDown[ii]))
+        
+
+def mainGenreInfo():
+
+    #load genre info cache
+    cacheFileName = os.path.join(sys.argv[1],"musicGenreCache.json")
+    if (os.path.isfile(cacheFileName)):
+        genreCache = loadGenreCache(cacheFileName)
+    else:
+        print("no genre cache file found")
+        return 1;
+    
+    #print genre cache information
+    pprint(genreCache)
+    printGenreInfo(genreCache)
+    return 0
+
 if (__name__ == '__main__'):
-    main()
+    mainGenreInfo()
+#    main()
