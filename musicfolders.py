@@ -79,6 +79,7 @@ def getArtistGenre(artistDirPath):
 #if artist's dominant genre matches genreLookup, add to genreFolders
 #also cache dominant genre info
 def loadGenreInfo(musicdir, genreConfig, genreCache):
+    emptyGenres = {}
     returnMe = {}
     try:
         musicdirs = os.listdir(musicdir)
@@ -107,12 +108,13 @@ def loadGenreInfo(musicdir, genreConfig, genreCache):
                 (cacheGenre, cacheTime) = genreCache[dirpath]
                 if (dirTime < cacheTime): # not stale data!
                     thisGenre = cacheGenre
-                    pprint(thisGenre)
 
             #look for genre id3 tag info
             if (thisGenre == None):
                 thisGenre = getArtistGenre(dirpath)
-                
+                if (thisGenre == None):
+                    (foo, artistname) = os.path.split(dirpath)
+                    emptyGenres[dirpath] = artistname
 
             #if we have a genre tag for this artist
             if (thisGenre != None):
@@ -123,6 +125,11 @@ def loadGenreInfo(musicdir, genreConfig, genreCache):
         else:
             print ("nonDIR:" + ii)
     print("done iterating over songs")
+    
+   #output emptygenreresults to json file
+    with open('NoGenre.json','w') as f:
+        json.dump(emptyGenres, f, indent=2)
+
     pprint(returnMe)
     return (returnMe)
 
@@ -195,10 +202,17 @@ def mainGenreInfo():
         return 1;
     
     #print genre cache information
-    pprint(genreCache)
     printGenreInfo(genreCache)
+    
     return 0
 
 if (__name__ == '__main__'):
-    mainGenreInfo()
-#    main()
+#    mainGenreInfo()
+    main()
+
+#pylast Tool
+#
+#API Key: 6e5786564befe731bd74d0c0e12e4f71
+#Secret: is eff86042d79109d0afc4b588fb27789e#
+#
+#
