@@ -29,3 +29,40 @@ Tool to organize really big music collections and break them up into genre folde
 4)move artist folders to genre folders based on user specified genre tag groups
 
  -e.g. the genre folder I am creating for "Dance" will include artists that are tagged unders the genres: acid, beat, club, techno, techno, trance, etc.
+
+
+
+Typical Use Case for a big messy music collection:
+----
+
+PART 1:
+
+-run musicbrainz picard
+
+-add all of your unsorted music ("add folder")
+
+-run "scan" to identify mp3s
+
+-Options -> File naming
+
+-check the "move files to this directory when saving" and choose the "global root directory" of your music collection
+
+-under the "Name files like this" field, paste this:
+%albumartistsort%/%artist% - %album% - $num(%tracknumber%,2) - %title%
+
+e.g. "Beatles, The/The Beatles - Revolver - 01 - Taxman.mp3"
+
+-select all identified songs and click "save".
+
+
+PART 2:
+
+-Decide on your major genre folders and the associated tags with those genres. Create a json file to reflect this. See GenreSetup.json
+
+-Run: "python musicfolders.py [musicsourcedir] [genre-info.json] > [artistMoves.json]".
+
+-Run: "python MoveToGenreDirs.py [artistMoves.json]".
+
+
+
+

@@ -2,6 +2,10 @@ import os
 import sys
 import json
 
+#PROGRAM DESCRIPTION:
+#This takes json output from musicfolders.py
+#And actually moves the artist folders to their respective genres
+
 def moveToDir(genreFolder, genreFolders):
     for artistDir in genreFolders:
         (artistPath, artistDirName) = os.path.split(artistDir)
